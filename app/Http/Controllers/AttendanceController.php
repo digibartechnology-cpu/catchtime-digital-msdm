@@ -180,7 +180,7 @@ class AttendanceController extends Controller
     }
 
     public function downloadPdf(Request $request) {
-        $query = Attendance::with('employee');
+        $query = \App\Models\Attendance::with('employee');
         if ($request->start_date && $request->end_date) {
             $query->whereBetween('created_at', [$request->start_date.' 00:00:00', $request->end_date.' 23:59:59']);
         }
@@ -213,14 +213,18 @@ class AttendanceController extends Controller
             }
 
             $time = $absen->created_at;
+            
+            // PERBAIKAN: Ubah ke huruf kecil semua dan gunakan pencarian kata kunci 
+            // agar kebal terhadap perubahan ejaan di database
+            $typeLokal = strtolower($absen->type);
 
-            if ($absen->type == 'Masuk') {
+            if (str_contains($typeLokal, 'masuk')) {
                 $reportData[$empId]['harian'][$date]['masuk'] = $time;
-            } elseif ($absen->type == 'Pulang') {
+            } elseif (str_contains($typeLokal, 'pulang')) {
                 $reportData[$empId]['harian'][$date]['pulang'] = $time;
-            } elseif ($absen->type == 'Leave Office') {
+            } elseif (str_contains($typeLokal, 'ijin') || str_contains($typeLokal, 'leave')) {
                 $reportData[$empId]['harian'][$date]['leave'][] = $time;
-            } elseif ($absen->type == 'Kembali ke Kantor') {
+            } elseif (str_contains($typeLokal, 'kembali')) {
                 $reportData[$empId]['harian'][$date]['kembali'][] = $time;
             }
         }
