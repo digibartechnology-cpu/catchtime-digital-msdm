@@ -14,20 +14,36 @@ use App\Http\Controllers\GuestController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\AuthController;
-
 // ==========================================
 // RUTE LAYAR TERKUNCI (IJIN KELUAR)
 // ==========================================
-// 1. Halaman Gembok (INI YANG HILANG SEBELUMNYA)
+// 1. Halaman Gembok
 Route::get('/absen/terkunci', function () {
     if (!session()->has('kunci_ijin_keluar')) {
-        return redirect('/'); // Tendang balik jika tidak ada status ijin
+        return redirect('/'); 
     }
     return view('lock_screen');
 });
 
-// 2. Proses Buka Kunci (Saat Klik Tombol "Sudah Kembali") -> FIXED 405
-Route::post('/absen/buka-kunci', [AttendanceController::class, 'kembaliKeKantor'])->name('absen.kembali');
+// 2. Fungsi Eksekusi (Update Database & Hapus Session)
+$prosesKembali = function () {
+    $idAbsen = session('kunci_ijin_keluar');
+    
+    if ($idAbsen) {
+        $absen = \App\Models\Attendance::find($idAbsen);
+        if ($absen) {
+            // Update langsung ke property lalu save, ini metode paling tahan banting
+            $absen->type = 'Sudah kembali ke kantor';
+            $absen->save();
+        }
+        session()->forget('kunci_ijin_keluar');
+    }
+    return redirect('/')->with('success', 'Akses dibuka! Selamat bekerja kembali.');
+};
+
+// 3. Daftarkan KEDUA URL agar tidak ada lagi 404
+Route::post('/absen/buka-kunci', $prosesKembali)->name('absen.buka_kunci');
+Route::post('/absen/kembali', $prosesKembali)->name('absen.kembali');
 
 // ==========================================
 // ROUTE HALAMAN DEPAN (Cek Jadwal LSP & Cek Gembok)
@@ -131,7 +147,6 @@ Route::post('/absen-lsp/store', function (Request $request) {
         'lsp_session_id' => 'required',
         'nama_peserta' => 'required',
         'instansi_asal' => 'required',
-        // NAIKKAN BATAS MENJADI 10MB (10240 KB)
         'foto_bukti' => 'required|image|max:10240', 
     ]);
 
