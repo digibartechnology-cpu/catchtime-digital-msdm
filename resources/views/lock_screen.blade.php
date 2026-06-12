@@ -27,13 +27,9 @@
             </p>
         </div>
         
-        <form action="/absen/kembali" method="POST">
+       <form action="{{ route('absen.kembali') }}" method="POST">
             @csrf
-            <input type="hidden" name="employee_id" value="{{ Auth::user()->employee_id ?? '' }}"> 
-            
-            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition">
-                Saya Sudah Kembali ke Kantor
-            </button>
+            <button type="submit" class="btn btn-primary">Sudah Kembali ke Kantor</button>
         </form>
         
     </div>

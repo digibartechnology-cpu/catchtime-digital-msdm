@@ -152,9 +152,9 @@ class AttendanceController extends Controller
     {
         $footer = "\n\n_(Ini merupakan pesan otomatis, harap untuk tidak membalasnya)_";
         Http::withoutVerifying()->withHeaders([
-            'Authorization' => env('FONNTE_TOKEN'),
+            'Authorization' => env('FONNTE_TOKEN', 'KvH5jtTzc6yagwZsy6qa'),
         ])->post('https://api.fonnte.com/send', [
-            'target' => env('WA_HRD'),
+            'target' => env('WA_HRD', '628559000857'),
             'message' => $message . "\n⏰ Waktu: " . now()->format('d/m/Y H:i') . " WIB" . $footer,
         ]);
     }
