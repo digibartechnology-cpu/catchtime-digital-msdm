@@ -150,12 +150,14 @@ class AttendanceController extends Controller
 
     private function sendWhatsappNotification($message)
     {
-        $footer = "\n\n_(Ini merupakan pesan otomatis, harap untuk tidak membalasnya)_";
-        Http::withoutVerifying()->withHeaders([
-            'Authorization' => env('FONNTE_TOKEN', 'KvH5jtTzc6yagwZsy6qa'),
+        $token = config('services.fonnte.token', 'KvH5jtTzc6yagwZsy6qa');
+        $target = config('services.fonnte.wa_hrd', '628559000857');
+        
+        \Illuminate\Support\Facades\Http::withoutVerifying()->withHeaders([
+            'Authorization' => $token,
         ])->post('https://api.fonnte.com/send', [
-            'target' => env('WA_HRD', '628559000857'),
-            'message' => $message . "\n⏰ Waktu: " . now()->format('d/m/Y H:i') . " WIB" . $footer,
+            'target' => $target,
+            'message' => $message . "\n⏰ Waktu: " . now()->format('d/m/Y H:i') . " WIB",
         ]);
     }
 
