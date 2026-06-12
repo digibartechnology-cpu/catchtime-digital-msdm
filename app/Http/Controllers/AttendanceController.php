@@ -150,8 +150,8 @@ class AttendanceController extends Controller
 
     private function sendWhatsappNotification($message)
     {
-        $token = config('services.fonnte.token', 'KvH5jtTzc6yagwZsy6qa');
-        $target = config('services.fonnte.wa_hrd', '628559000857');
+        $token = env('FONNTE_TOKEN', 'KvH5jtTzc6yagwZsy6qa');
+        $target = env('WA_HRD', '6281348467817'); // <-- INI NOMOR PENERIMA
         
         \Illuminate\Support\Facades\Http::withoutVerifying()->withHeaders([
             'Authorization' => $token,

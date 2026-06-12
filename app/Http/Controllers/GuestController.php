@@ -49,13 +49,16 @@ class GuestController extends Controller
         $pesan .= "🏢 Instansi: " . $guest->instansi_asal . "\n";
         $pesan .= "📝 Keperluan: " . $guest->tujuan_keperluan . "\n";
         $pesan .= "⏰ Waktu: " . now()->format('d/m/Y H:i') . " WIB";
-        $pesan .= " (Ini merupakan pesan otomatis, harap untuk tidak membalasnya) "; // Pesan tambahan miring
+        $pesan .= "\n\n_(Ini merupakan pesan otomatis, harap untuk tidak membalasnya)_"; // Pesan tambahan miring
 
-        // KIRIM WA (Fix cURL error 77 pakai withoutVerifying)
-        Http::withoutVerifying()->withHeaders([
-            'Authorization' => env('FONNTE_TOKEN'),
+        // KIRIM WA (Fix cURL error 77 dan cegah error env di Laravel Cloud)
+        $token = env('FONNTE_TOKEN', 'KvH5jtTzc6yagwZsy6qa');
+        $target = env('WA_HRD', '6281348467817'); // <-- INI NOMOR PENERIMA
+
+        \Illuminate\Support\Facades\Http::withoutVerifying()->withHeaders([
+            'Authorization' => $token,
         ])->post('https://api.fonnte.com/send', [
-            'target' => env('WA_HRD'),
+            'target' => $target,
             'message' => $pesan,
         ]);
 
