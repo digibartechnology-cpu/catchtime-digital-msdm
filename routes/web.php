@@ -32,9 +32,11 @@ $prosesKembali = function () {
     if ($idAbsen) {
         $absen = \App\Models\Attendance::find($idAbsen);
         if ($absen) {
-            // Update langsung ke property lalu save, ini metode paling tahan banting
-            $absen->type = 'Sudah kembali ke kantor';
-            $absen->save();
+            // PERBAIKAN: JANGAN TIMPA DATA IJIN!
+            // Kita gandakan (replicate) identitas absen sebelumnya untuk membuat baris baru "Kembali"
+            $kembali = $absen->replicate();
+            $kembali->type = 'Sudah kembali ke kantor';
+            $kembali->save(); // Otomatis mencatat jam dan menit saat Anda klik "Sudah Kembali"
         }
         session()->forget('kunci_ijin_keluar');
     }
