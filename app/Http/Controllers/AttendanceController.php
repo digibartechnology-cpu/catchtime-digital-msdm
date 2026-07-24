@@ -62,7 +62,7 @@ class AttendanceController extends Controller
         $request->validate([
             'employee_id' => 'required',
             'type' => 'required',
-            'foto_bukti' => 'required_unless:type,Leave Office|string', // Ubah validasi jadi string
+            'foto_bukti' => 'required_unless:type,Leave Office|nullable|string', 
         ]);
 
         $sudahAbsen = Attendance::where('employee_id', $request->employee_id)
@@ -249,8 +249,10 @@ class AttendanceController extends Controller
             }
         }
 
-        // 2. Kalkulasi Jam Kerja (Perbaikan Menggunakan diffInMinutes)
+        // 2. Kalkulasi Jam Kerja & Total Periode
         foreach ($reportData as $empId => &$empData) {
+            $totalMenitPeriode = 0; // TAHAP BARU: Inisialisasi wadah penampung total menit
+
             foreach ($empData['harian'] as $date => &$dayData) {
                 if ($dayData['masuk'] && $dayData['pulang']) {
                     // Di-parse ulang sebagai Carbon murni agar selisih waktu 100% akurat
@@ -275,7 +277,10 @@ class AttendanceController extends Controller
                     // Pastikan tidak ada angka minus jika ada kesalahan input
                     if ($netMinutes < 0) $netMinutes = 0; 
 
-                    // Konversi total menit kembali ke format Jam dan Menit
+                    // TAHAP BARU: Tambahkan menit bersih harian ke total menit periode
+                    $totalMenitPeriode += $netMinutes;
+
+                    // Konversi total menit kembali ke format Jam dan Menit (Harian)
                     $hours = floor($netMinutes / 60);
                     $minutes = $netMinutes % 60;
                     
@@ -295,6 +300,11 @@ class AttendanceController extends Controller
                     $dayData['durasi_ijin'] = '-';
                 }
             }
+
+            // TAHAP BARU: Konversi total keseluruhan menit menjadi Jam dan Menit untuk Footer PDF
+            $jamPeriode = floor($totalMenitPeriode / 60);
+            $menitPeriode = $totalMenitPeriode % 60;
+            $empData['total_jam_periode'] = $jamPeriode . ' Jam ' . $menitPeriode . ' Menit';
         }
 
         $pdf = Pdf::loadView('admin.attendance_pdf', [

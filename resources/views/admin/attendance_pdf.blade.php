@@ -147,6 +147,8 @@
         <tbody>
             @php $no = 1; @endphp
             @forelse($reportData as $empId => $empData)
+                
+                <!-- Looping Data Harian -->
                 @foreach($empData['harian'] as $date => $dayData)
                 <tr>
                     <td class="text-center">{{ $no++ }}</td>
@@ -167,6 +169,18 @@
                     </td>
                 </tr>
                 @endforeach
+
+                <!-- BARIS BARU: REKAP TOTAL PER KARYAWAN -->
+                <tr style="background-color: #e5e7eb;">
+                    <td colspan="5" style="text-align: right; padding-right: 15px; font-weight: bold; text-transform: uppercase; font-size: 10px;">
+                        Total Jam Kerja Bersih {{ $empData['nama'] }} Periode Ini:
+                    </td>
+                    <td class="text-center" style="font-weight: bold; font-size: 12px; color: #15803d;">
+                        {{ $empData['total_jam_periode'] ?? '0 Jam 0 Menit' }}
+                    </td>
+                </tr>
+                <!-- Akhir Baris Rekap -->
+
             @empty
                 <tr>
                     <td colspan="6" class="text-center" style="padding: 20px;">Tidak ada data absensi pada periode ini.</td>
