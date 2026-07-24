@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Digital MSDM</title>
-    <link rel="icon" href="{{ asset('images/logo-digibar.png') }}" type="image/png">
+    <link rel="icon" href="{{ asset('images/logo_icon.png') }}" type="image/png">
     <!-- Menggunakan Tailwind CSS untuk styling cepat -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -108,7 +108,7 @@
             document.getElementById('greeting').innerHTML = `
                 ${greeting}<br> 
                 <span class="text-xl font-medium text-gray-600 mt-2 block">
-                    Selamat Datang di Kantor <span class="text-blue-600 font-bold">LSP Citra Insan x PT Ananta Jaya Utama Abadi</span>
+                    Selamat Datang di Kantor <span class="text-blue-600 font-bold">PT Loka Karya Nusantara</span>
                 </span>
             `;
 

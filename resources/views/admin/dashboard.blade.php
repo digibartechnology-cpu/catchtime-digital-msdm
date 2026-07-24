@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard DigiBAR Digital MSDM</title>
-    <link rel="icon" href="{{ asset('images/logo-digibar.png') }}" type="image/png">
+    <link rel="icon" href="{{ asset('images/logo_icon.png') }}" type="image/png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
@@ -59,7 +59,7 @@
                                 </svg>
                             </button>
 
-                            <img src="{{ asset('images/icon logo digibar.png') }}" alt="Logo DigiBAR" class="h-10 sm:h-14 w-auto drop-shadow-sm">
+                            <img src="{{ asset('images/Logo_DigiBAR.png') }}" alt="Logo DigiBAR" class="h-10 sm:h-24 w-auto drop-shadow-sm">
                             <div>
                                 <h1 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-red-900 tracking-tight">
                                     DigiBAR Group <span class="block sm:inline font-light text-gray-500 text-sm sm:text-base md:text-lg">| (Human Resource Management)</span>

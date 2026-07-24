@@ -7,6 +7,7 @@ use App\Models\Attendance;
 use App\Models\Employee;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class AttendanceController extends Controller
@@ -27,36 +28,41 @@ class AttendanceController extends Controller
     }
 
     public function adminStore(Request $request)
-    {
-        $request->validate([
-            'employee_id' => 'required',
-            'type' => 'required|in:Masuk,Pulang',
-            'foto_bukti' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-        ]);
+{
+    $request->validate([
+        'employee_id' => 'required',
+        'type' => 'required|in:Masuk,Pulang',
+        'foto_bukti' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+    ]);
 
-        $imageName = 'default.png';
-        if ($request->hasFile('foto_bukti')) {
-            $imageName = time() . '.' . $request->foto_bukti->extension();
-            $request->foto_bukti->move(public_path('images/absensi'), $imageName);
-        }
-
-        $attendance = Attendance::create([
-            'employee_id' => $request->employee_id,
-            'type' => $request->type,
-            'foto_bukti' => $imageName,
-        ]);
-
-        $this->sendWhatsappNotification("📌 *ABSENSI MANUAL (ADMIN)*\n👤 Nama: " . $attendance->employee->nama_lengkap . "\n📅 Tipe: " . $attendance->type);
-
-        return redirect()->route('admin.absensi.index')->with('success', 'Data tersimpan & WA Terkirim!');
+    $imageName = 'default.png';
+    
+    // --- UBAH BAGIAN INI ---
+    if ($request->hasFile('foto_bukti')) {
+        $imageName = time() . '_' . uniqid() . '.' . $request->foto_bukti->extension();
+        
+        // Upload file biasa ke Cloud (S3) di folder 'absensi'
+        $request->file('foto_bukti')->storeAs('absensi', $imageName, 's3', 'public');
     }
+    // -----------------------
+
+    $attendance = Attendance::create([
+        'employee_id' => $request->employee_id,
+        'type' => $request->type,
+        'foto_bukti' => $imageName,
+    ]);
+
+    $this->sendWhatsappNotification("📌 *ABSENSI MANUAL (ADMIN)*\n👤 Nama: " . $attendance->employee->nama_lengkap . "\n📅 Tipe: " . $attendance->type);
+
+    return redirect()->route('admin.absensi.index')->with('success', 'Data tersimpan & WA Terkirim!');
+}
 
     public function userStore(Request $request)
     {
         $request->validate([
             'employee_id' => 'required',
             'type' => 'required',
-            'foto_bukti' => 'required_unless:type,Leave Office|image|max:10240', 
+            'foto_bukti' => 'required_unless:type,Leave Office|string', // Ubah validasi jadi string
         ]);
 
         $sudahAbsen = Attendance::where('employee_id', $request->employee_id)
@@ -83,11 +89,25 @@ class AttendanceController extends Controller
         }
 
         $imageName = 'Tanpa Foto'; 
-        if ($request->hasFile('foto_bukti')) {
-            $imageName = time() . '.' . $request->foto_bukti->extension();
-            $request->foto_bukti->move(public_path('images/absensi'), $imageName);
-        }
+        if ($request->filled('foto_bukti') && str_contains($request->foto_bukti, 'base64')) {
+            try {
+                // Memecah teks base64 dari kamera
+                $image_parts = explode(";base64,", $request->foto_bukti);
+                $image_type_aux = explode("image/", $image_parts[0]);
+                $image_type = $image_type_aux[1];
+                $image_base64 = base64_decode($image_parts[1]);
+                
+                // Buat nama file unik
+                $imageName = time() . '_' . uniqid() . '.' . $image_type;
+                $path = 'absensi/' . $imageName;
+                
+                // Simpan gambar ke Cloud (S3/Cloudflare R2)
+                Storage::disk('s3')->put($path, $image_base64, 'public');
 
+            } catch (\Exception $e) {
+                return back()->withErrors(['pesan' => 'Gagal mengunggah foto ke Cloud: ' . $e->getMessage()]);
+            }
+        }
         $absenBaru = Attendance::create([
             'employee_id' => $request->employee_id,
             'type' => $request->type,

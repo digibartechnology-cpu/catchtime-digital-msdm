@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Buku Tamu</title>
-    <link rel="icon" href="{{ asset('images/Logo DigiBAR PNG.png') }}" type="image/png">
+    <link rel="icon" href="{{ asset('images/logo_icon.png') }}" type="image/png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -23,7 +23,7 @@
 
     <div class="w-full max-w-md bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
         <div class="bg-blue-700 px-6 py-8 text-center">
-            <h1 class="text-2xl font-bold text-white tracking-wide">BUKU TAMU LSP CITRA INSAN</h1>
+            <h1 class="text-2xl font-bold text-white tracking-wide">BUKU TAMU PT Loka Karya Nusantara</h1>
         </div>
         <div class="p-6">
             <form action="/buku-tamu/store" method="POST">

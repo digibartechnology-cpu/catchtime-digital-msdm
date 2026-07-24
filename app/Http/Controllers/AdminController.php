@@ -9,6 +9,7 @@ use App\Models\Attendance;
 use App\Models\LspSession; // PENTING: Ditambahkan untuk fitur jadwal LSP
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Str; // Ditambahkan untuk merapikan nama file PDF
 
 class AdminController extends Controller
 {
@@ -25,7 +26,7 @@ class AdminController extends Controller
             'totalTamu'     => Guest::count(),
             // Hitung absensi khusus hari ini
             'absenHariIni'  => Attendance::whereDate('created_at', $today)->count(),
-            // Hitung tamu khusus hari ini (untuk memperbaiki error baris 112)
+            // Hitung tamu khusus hari ini
             'tamuHariIni'   => Guest::whereDate('created_at', $today)->count(),
         ];
 
@@ -66,9 +67,11 @@ class AdminController extends Controller
     // Menghapus Jadwal LSP
     public function lspDestroy($id)
     {
+        // Pastikan di file migration tabel absensi LSP sudah menggunakan onDelete('cascade')
         LspSession::findOrFail($id)->delete();
         return back()->with('success', 'Jadwal kegiatan beserta data absensinya berhasil dihapus!');
     }
+    
     public function downloadPdf($id)
     {
         // Ambil data sesi beserta seluruh orang yang absen di dalamnya
@@ -80,11 +83,12 @@ class AdminController extends Controller
         // Atur ukuran kertas menjadi A4 tegak (Portrait)
         $pdf->setPaper('A4', 'portrait');
         
-        // Bersihkan spasi pada nama file agar rapi saat terdownload
-        $namaFile = 'Rekap_Absen_LSP_' . str_replace(' ', '_', $sesi->nama_kegiatan) . '.pdf';
+        // Bersihkan spasi dan karakter aneh pada nama file menggunakan Str::slug
+        $namaFile = 'Rekap_Absen_LSP_' . Str::slug($sesi->nama_kegiatan, '_') . '.pdf';
         
         return $pdf->download($namaFile);
     }
+    
     public function getAttendances($id)
     {
         $sesi = LspSession::with('attendances')->findOrFail($id);
@@ -92,6 +96,7 @@ class AdminController extends Controller
         // Kembalikan data dalam bentuk JSON agar bisa dibaca oleh JavaScript
         return response()->json($sesi->attendances);
     }
+    
     public function getLiveCounts()
     {
         $counts = LspSession::withCount('attendances')->pluck('attendances_count', 'id');

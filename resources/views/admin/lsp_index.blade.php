@@ -3,43 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tambahkan Absensi Peserta</title>
-    <link rel="icon" href="{{ asset('images/Logo DigiBAR PNG.png') }}" type="image/png">
+    <title>Buku Tamu</title>
+    <link rel="icon" href="{{ asset('images/logo_icon.png') }}" type="image/png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-
-<body class="bg-gray-100 font-sans" x-data="lspData">
-
-    <header class="bg-white border-b border-gray-200 p-4 flex justify-between items-center md:hidden sticky top-0 z-40">
-        <h2 class="text-xl font-bold text-red-700">DigiBAR DIGITAL MSDM</h2>
-        <button @click="sidebarOpen = true" class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-        </button>
-    </header>
+<body class="bg-gray-100 font-sans" x-data="{ sidebarOpen: false, logoutModalOpen: false }">
 
     <div class="flex h-screen overflow-hidden">
-        <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'" class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-0 border-r border-gray-200 flex flex-col h-full">
-            <div class="p-6 text-center border-b border-gray-100 flex justify-between items-center md:block">
-                <h2 class="text-xl font-bold text-red-700">DigiBAR Digital MSDM</h2>
-                <button @click="sidebarOpen = false" class="md:hidden text-gray-400 hover:text-red-600 text-2xl">&times;</button>
+        <aside 
+            :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+            class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out border-r border-gray-200 flex flex-col h-full">
+            
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-red-700">Menu</h2>
+                <button @click="sidebarOpen = false" class="text-gray-400 hover:text-red-600 text-3xl font-bold transition-colors focus:outline-none">&times;</button>
             </div>
+
             <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-                <a href="/admin/dashboard" class="block px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg">Dashboard</a>
-                <a href="/admin/karyawan" class="block px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg">Data Karyawan</a>
-                <a href="/admin/absensi" class="block px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg">Data Absensi</a>
-                <a href="/admin/buku-tamu" class="block px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg">Buku Tamu</a>
+                <a href="/admin/dashboard" class="block px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-red-600 rounded-lg transition-colors">
+                    Dashboard Overview
+                </a>
+                <a href="/admin/karyawan" class="block px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-red-600 rounded-lg transition-colors">
+                    Data Karyawan
+                </a>
+                <a href="/admin/absensi" class="block px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-red-600 rounded-lg transition-colors">
+                    Data Absensi
+                </a>
+                <a href="/admin/absensi" class="block px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-red-600 rounded-lg transition-colors">
+                    Buku Tamu
+                </a>
+                <a href="/admin/buku-tamu" class="block px-4 py-3 bg-red-50 text-red-700 rounded-lg font-semibold border-l-4 border-red-600">
+                    Input Kegiatan
+                </a>
             </nav>
-             <div class="p-4 border-t border-gray-100 mt-auto">
-                <form action="/logout" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin keluar?')">
-                    @csrf
-                    <button type="submit" class="w-full flex items-center justify-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 active:bg-red-100 rounded-xl transition-all duration-200 font-semibold border border-red-50">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                        <span>Keluar Sistem</span>
-                    </button>
-                </form>
+
+            <div class="p-4 border-t border-gray-100 mt-auto">
+                <button @click="logoutModalOpen = true" type="button" class="w-full flex items-center justify-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 active:bg-red-100 rounded-xl transition-all duration-200 font-semibold border border-red-50">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                    <span>Keluar Sistem</span>
+                </button>
             </div>
         </aside>
+
+        <div x-show="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" x-transition.opacity style="display: none;"></div>
+
+        <main class="flex-1 overflow-y-auto w-full">
+            <div class="bg-gray-50 min-h-screen p-4 sm:p-6 md:p-8">
+                <div class="max-w-7xl mx-auto">
+                    
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4 border-b border-gray-200 pb-4">
+                        <div class="flex items-center gap-3 sm:gap-5">
+                            <button @click="sidebarOpen = true" class="p-2 -ml-2 text-gray-600 hover:bg-gray-200 hover:text-red-700 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-red-500">
+                                <svg class="w-7 h-7 sm:w-9 sm:h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path>
+                                </svg>
+                            </button>
+
+                            <img src="{{ asset('images/Logo_DigiBAR.png') }}" alt="Logo DigiBAR" class="h-10 sm:h-24 w-auto drop-shadow-sm">
+                            <div>
+                                <h1 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-red-900 tracking-tight">
+                                    DigiBAR Group <span class="block sm:inline font-light text-gray-500 text-sm sm:text-base md:text-lg">| (Human Resource Management)</span>
+                                </h1>
+                                <p class="text-gray-500 text-xs sm:text-sm mt-0.5 sm:mt-1">Digital Attendance and Guest Book</p>
+                            </div>
+                        </div>
+                    </div>
+
 
         <main class="flex-1 p-4 md:p-8 overflow-y-auto">
             <header class="mb-8">

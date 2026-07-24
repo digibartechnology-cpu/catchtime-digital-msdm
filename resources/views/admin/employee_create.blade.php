@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kelola Data Karyawan</title>
-    <link rel="icon" href="{{ asset('images/logo-digibar.png') }}" type="image/png">
+    <link rel="icon" href="{{ asset('images/logo_icon.png') }}" type="image/png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
@@ -59,7 +59,7 @@
                                 </svg>
                             </button>
 
-                            <img src="{{ asset('images/icon logo digibar.png') }}" alt="Logo DigiBAR" class="h-10 sm:h-14 w-auto drop-shadow-sm">
+                            <img src="{{ asset('images/Logo_DigiBAR.png') }}" alt="Logo DigiBAR" class="h-10 sm:h-24 w-auto drop-shadow-sm">
                             <div>
                                 <h1 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-red-900 tracking-tight">
                                     DigiBAR Group <span class="block sm:inline font-light text-gray-500 text-sm sm:text-base md:text-lg">| (Human Resource Management)</span>
@@ -80,47 +80,75 @@
                         </div>
                     @endif
 
+                    @if(session('error'))
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6 text-sm font-bold">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+
                     <div class="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
                         <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Tambah Karyawan Baru</h2>
-                        <form action="/admin/karyawan" method="POST">
+                        
+                        <!-- CEK LIMIT KARYAWAN -->
+                        @php
+                            $isLimitReached = count($employees) >= 15;
+                        @endphp
+
+                        @if($isLimitReached)
+                            <!-- Alert Batas Maksimal -->
+                            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 flex items-start gap-3">
+                                <svg class="w-6 h-6 text-red-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                <div>
+                                    <p class="font-bold">Batas Maksimal Tercapai!</p>
+                                    <p class="text-sm mt-1">Anda sudah memiliki 15 karyawan. Anda tidak dapat menambahkan data baru lagi kecuali menghapus data yang sudah ada terlebih dahulu.</p>
+                                </div>
+                            </div>
+                        @endif
+
+                        <form action="/admin/karyawan" method="POST" @if($isLimitReached) onsubmit="event.preventDefault(); alert('Akses Ditolak: Batas maksimal 15 karyawan telah tercapai!');" @endif>
                             @csrf
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm">
-                                <div>
-                                    <label class="block text-gray-700 font-bold mb-2">Nama Lengkap</label>
-                                    <input type="text" name="nama_lengkap" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500" required>
+                            <!-- Fieldset akan otomatis mengunci/mendisable seluruh input jika limit tercapai -->
+                            <fieldset @if($isLimitReached) disabled class="opacity-50 cursor-not-allowed" @endif>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm">
+                                    <div>
+                                        <label class="block text-gray-700 font-bold mb-2">Nama Lengkap</label>
+                                        <input type="text" name="nama_lengkap" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 disabled:bg-gray-100" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 font-bold mb-2">Jenis Kelamin</label>
+                                        <select name="jenis_kelamin" class="w-full px-3 py-2 border rounded-lg bg-white disabled:bg-gray-100" required>
+                                            <option value="">-- Pilih --</option>
+                                            <option value="Laki-laki">Laki-laki</option>
+                                            <option value="Perempuan">Perempuan</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 font-bold mb-2">No. WhatsApp</label>
+                                        <input type="text" name="no_whatsapp" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 disabled:bg-gray-100" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 font-bold mb-2">Jabatan / Posisi</label>
+                                        <input type="text" name="jabatan_posisi" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 disabled:bg-gray-100" required>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label class="block text-gray-700 font-bold mb-2">Jenis Kelamin</label>
-                                    <select name="jenis_kelamin" class="w-full px-3 py-2 border rounded-lg bg-white" required>
-                                        <option value="">-- Pilih --</option>
-                                        <option value="Laki-laki">Laki-laki</option>
-                                        <option value="Perempuan">Perempuan</option>
-                                    </select>
+                                <div class="mb-6 text-sm">
+                                    <label class="block text-gray-700 font-bold mb-2">Alamat Tempat Tinggal</label>
+                                    <textarea name="alamat_tempat_tinggal" rows="2" class="w-full px-3 py-2 border rounded-lg disabled:bg-gray-100" required></textarea>
                                 </div>
-                                <div>
-                                    <label class="block text-gray-700 font-bold mb-2">No. WhatsApp</label>
-                                    <input type="text" name="no_whatsapp" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500" required>
+                                <div class="flex justify-end">
+                                    <button type="submit" class="w-full md:w-auto text-white font-bold py-3 px-8 rounded-xl transition shadow-lg 
+                                        @if($isLimitReached) bg-gray-400 hover:bg-gray-400 cursor-not-allowed shadow-none 
+                                        @else bg-red-600 hover:bg-red-700 shadow-red-100 @endif">
+                                        Simpan Data
+                                    </button>
                                 </div>
-                                <div>
-                                    <label class="block text-gray-700 font-bold mb-2">Jabatan / Posisi</label>
-                                    <input type="text" name="jabatan_posisi" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500" required>
-                                </div>
-                            </div>
-                            <div class="mb-6 text-sm">
-                                <label class="block text-gray-700 font-bold mb-2">Alamat Tempat Tinggal</label>
-                                <textarea name="alamat_tempat_tinggal" rows="2" class="w-full px-3 py-2 border rounded-lg" required></textarea>
-                            </div>
-                            <div class="flex justify-end">
-                                <button type="submit" class="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-xl transition shadow-lg shadow-red-100">
-                                    Simpan Data
-                                </button>
-                            </div>
+                            </fieldset>
                         </form>
                     </div>
 
                     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                         <div class="p-6 border-b border-gray-100 bg-gray-50">
-                            <h2 class="text-lg font-bold text-gray-800">Daftar Karyawan</h2>
+                            <h2 class="text-lg font-bold text-gray-800">Daftar Karyawan (<span x-text="{{ count($employees) }}"></span>/15)</h2>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse min-w-[800px]">
