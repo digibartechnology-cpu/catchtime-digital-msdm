@@ -77,6 +77,13 @@
                         </div>
                     @endif
 
+                    @if(session('error'))
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6">
+                            <strong class="font-bold">Gagal! </strong>
+                            <span class="block sm:inline text-sm">{{ session('error') }}</span>
+                        </div>
+                    @endif
+
                     <div class="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-gray-100 mb-8 max-w-2xl">
                         <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Input Absensi Manual</h2>
                         <form action="/admin/absensi/store" method="POST" enctype="multipart/form-data">

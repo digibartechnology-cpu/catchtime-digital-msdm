@@ -74,6 +74,20 @@
                         <p class="text-gray-500 mt-1 text-sm">Monitor pengunjung yang datang ke kantor.</p>
                     </header>
 
+                    @if(session('success'))
+                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg relative mb-6">
+                            <strong class="font-bold">Berhasil! </strong>
+                            <span class="block sm:inline text-sm">{{ session('success') }}</span>
+                        </div>
+                    @endif
+
+                    @if(session('error'))
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6">
+                            <strong class="font-bold">Gagal! </strong>
+                            <span class="block sm:inline text-sm">{{ session('error') }}</span>
+                        </div>
+                    @endif
+
                     <div class="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
                         <form action="/admin/buku-tamu" method="GET" class="flex flex-col md:flex-row items-end gap-4">
                             <div class="w-full md:w-auto">

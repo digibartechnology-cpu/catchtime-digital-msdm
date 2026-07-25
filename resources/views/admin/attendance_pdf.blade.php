@@ -123,7 +123,7 @@
     </table>
 
     <div class="judul-laporan">
-        <h3>LAPORAN REKAPITULASI JAM KERJA KARYAWAN LSP CITRA INSAN dan PT ANANTA JAYA UTAMA ABADI</h3>
+        <h3>LAPORAN RINCIAN JAM KERJA KARYAWAN</h3>
         <p>Periode: 
             @if($startDate && $endDate)
                 <strong>{{ \Carbon\Carbon::parse($startDate)->format('d M Y') }}</strong> s/d <strong>{{ \Carbon\Carbon::parse($endDate)->format('d M Y') }}</strong>
@@ -133,6 +133,7 @@
         </p>
     </div>
 
+    <!-- 1. TABEL RINCIAN HARIAN (Tabel Lama Anda) -->
     <table class="tabel-data">
         <thead>
             <tr>
@@ -170,7 +171,7 @@
                 </tr>
                 @endforeach
 
-                <!-- BARIS BARU: REKAP TOTAL PER KARYAWAN -->
+                <!-- Baris Total Per Karyawan (di bawah rincian hariannya) -->
                 <tr style="background-color: #e5e7eb;">
                     <td colspan="5" style="text-align: right; padding-right: 15px; font-weight: bold; text-transform: uppercase; font-size: 10px;">
                         Total Jam Kerja Bersih {{ $empData['nama'] }} Periode Ini:
@@ -179,7 +180,6 @@
                         {{ $empData['total_jam_periode'] ?? '0 Jam 0 Menit' }}
                     </td>
                 </tr>
-                <!-- Akhir Baris Rekap -->
 
             @empty
                 <tr>
@@ -188,6 +188,40 @@
             @endforelse
         </tbody>
     </table>
+
+    <!-- 2. TABEL REKAPITULASI KESELURUHAN (BARU) -->
+    @if(count($reportData) > 0)
+    <div style="page-break-inside: avoid; margin-top: 30px;">
+        <div class="judul-laporan">
+            <h3>REKAPITULASI TOTAL JAM KERJA KARYAWAN</h3>
+            <p>Ringkasan akumulasi seluruh jam kerja</p>
+        </div>
+        <table class="tabel-data">
+            <thead>
+                <tr>
+                    <th width="10%">No</th>
+                    <th width="50%">Nama Karyawan</th>
+                    <th width="40%">Total Jam Kerja (Selama Periode)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php $noRekap = 1; @endphp
+                @foreach($reportData as $empId => $empData)
+                <tr>
+                    <td class="text-center">{{ $noRekap++ }}</td>
+                    <td>
+                        <strong>{{ $empData['nama'] }}</strong> 
+                        <span style="font-size: 9px; color: #666;"> - {{ $empData['jabatan'] }}</span>
+                    </td>
+                    <td class="text-center font-bold" style="color: #15803d; font-size: 13px;">
+                        {{ $empData['total_jam_periode'] ?? '0 Jam 0 Menit' }}
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    @endif
 
     <div class="footer-section">
         <div class="ttd-box">
