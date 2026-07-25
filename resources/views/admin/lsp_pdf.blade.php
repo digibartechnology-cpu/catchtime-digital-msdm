@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Rekap Kehadiran LSP</title>
-    <link rel="icon" href="{{ asset('images/Logo DigiBAR PNG.png') }}" type="image/png">
+    <link rel="icon" href="{{ asset('images/Logo_icon.png') }}" type="image/png">
     <style>
         body { font-family: Arial, sans-serif; font-size: 12px; color: #333; }
         .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #cc0000; padding-bottom: 15px; }
