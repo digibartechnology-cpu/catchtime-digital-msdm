@@ -111,7 +111,7 @@
     <table class="kop-surat">
         <tr>
             <td class="logo-container">
-                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/Logo_DigiBAR.png'))) }}" alt="Logo" width="150">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/Logo_DigiBAR_surat.png'))) }}" alt="Logo" width="150">
             </td>
             <td class="identitas">
                 <h2>DigiBAR Group</h2>
