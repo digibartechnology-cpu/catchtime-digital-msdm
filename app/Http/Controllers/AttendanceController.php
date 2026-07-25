@@ -52,7 +52,26 @@ class AttendanceController extends Controller
         'foto_bukti' => $imageName,
     ]);
 
-    $this->sendWhatsappNotification("📌 *ABSENSI MANUAL (ADMIN)*\n👤 Nama: " . $attendance->employee->nama_lengkap . "\n📅 Tipe: " . $attendance->type);
+    // --- AWAL TAMBAHAN LOGIKA JAM KERJA ---
+    // Menggunakan timezone WIB agar akurat dengan jam lokal Pontianak
+    $jamAbsen = now()->timezone('Asia/Jakarta')->format('H:i');
+    $statusWaktu = '';
+    
+    if ($attendance->type == 'Masuk') {
+        $statusWaktu = ($jamAbsen > '09:00') ? '🔴 *TELAT*' : '🟢 *On Time*';
+    } elseif ($attendance->type == 'Pulang') {
+        $statusWaktu = ($jamAbsen < '17:00') ? '🟡 *Pulang Awal*' : '🟢 *On Time*';
+    }
+    // --- AKHIR TAMBAHAN LOGIKA JAM KERJA ---
+
+    $pesanWA = "📌 *ABSENSI MANUAL (ADMIN)*\n👤 Nama: " . $attendance->employee->nama_lengkap . "\n📅 Tipe: " . $attendance->type;
+    
+    // Menyisipkan status waktu ke pesan WA
+    if ($statusWaktu != '') {
+        $pesanWA .= "\n🚦 Status: " . $statusWaktu;
+    }
+
+    $this->sendWhatsappNotification($pesanWA);
 
     return redirect()->route('admin.absensi.index')->with('success', 'Data tersimpan & WA Terkirim!');
 }
@@ -109,18 +128,39 @@ class AttendanceController extends Controller
             }
         }
         $absenBaru = Attendance::create([
-            'employee_id' => $request->employee_id,
-            'type' => $request->type,
-            'foto_bukti' => $imageName,
-            'keterangan' => $keterangan_alasan 
-        ]);
+        'employee_id' => $request->employee_id,
+        'type' => $request->type,
+        'foto_bukti' => $imageName,
+        'keterangan' => $keterangan_alasan 
+    ]);
 
-        $absenBaru->load('employee'); 
-        $pesanWA = "📌 *ABSENSI KARYAWAN*\n👤 Nama: " . $absenBaru->employee->nama_lengkap . "\n📅 Tipe: " . $absenBaru->type;
-        if ($keterangan_alasan) {
-            $pesanWA .= "\n📝 Keterangan: " . $keterangan_alasan;
-        }
-        $this->sendWhatsappNotification($pesanWA);
+    $absenBaru->load('employee'); 
+
+    // --- AWAL TAMBAHAN LOGIKA JAM KERJA ---
+    $jamAbsen = now()->timezone('Asia/Jakarta')->format('H:i');
+    $statusWaktu = '';
+    
+    if ($absenBaru->type == 'Masuk') {
+        $statusWaktu = ($jamAbsen > '09:00') ? '🔴 *TELAT*' : '🟢 *On Time*';
+    } elseif ($absenBaru->type == 'Pulang') {
+        $statusWaktu = ($jamAbsen < '17:00') ? '🟡 *Pulang Awal*' : '🟢 *On Time*';
+    } elseif ($absenBaru->type == 'Leave Office') {
+        $statusWaktu = '🔵 *Ijin Keluar*';
+    }
+    // --- AKHIR TAMBAHAN LOGIKA JAM KERJA ---
+
+    $pesanWA = "📌 *ABSENSI KARYAWAN*\n👤 Nama: " . $absenBaru->employee->nama_lengkap . "\n📅 Tipe: " . $absenBaru->type;
+    
+    // Menyisipkan status waktu ke pesan WA
+    if ($statusWaktu != '') {
+        $pesanWA .= "\n🚦 Status: " . $statusWaktu;
+    }
+
+    if ($keterangan_alasan) {
+        $pesanWA .= "\n📝 Keterangan: " . $keterangan_alasan;
+    }
+    
+    $this->sendWhatsappNotification($pesanWA);
 
         if ($request->type === 'Leave Office') {
             session(['kunci_ijin_keluar' => $absenBaru->id]);

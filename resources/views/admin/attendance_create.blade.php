@@ -162,7 +162,7 @@
                                         $badgeColor = 'bg-gray-100 text-gray-800 border-gray-200';
 
                                         if ($absen->type == 'Masuk') {
-                                            if ($jamAbsen > '08:00') {
+                                            if ($jamAbsen > '09:00') {
                                                 $statusWaktu = 'Telat';
                                                 $badgeColor = 'bg-red-100 text-red-800 border-red-200';
                                             } else {
@@ -170,7 +170,7 @@
                                                 $badgeColor = 'bg-green-100 text-green-800 border-green-200';
                                             }
                                         } elseif ($absen->type == 'Pulang') {
-                                            if ($jamAbsen < '16:00') {
+                                            if ($jamAbsen < '17:00') {
                                                 $statusWaktu = 'Pulang Awal';
                                                 $badgeColor = 'bg-yellow-100 text-yellow-800 border-yellow-200';
                                             } else {
