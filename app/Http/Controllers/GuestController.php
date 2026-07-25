@@ -44,7 +44,7 @@ class GuestController extends Controller
         ]);
 
         // PESAN WHATSAPP
-        $pesan = "🔔 *TAMU BARU - LSP CITRA INSAN X PT ANANTA JAYA UTAMA ABADI*\n";
+        $pesan = "🔔 *TAMU BARU - PT Loka Karya Nusantara*\n";
         $pesan .= "👤 Nama: " . $guest->nama_tamu . "\n";
         $pesan .= "🏢 Instansi: " . $guest->instansi_asal . "\n";
         $pesan .= "📝 Keperluan: " . $guest->tujuan_keperluan . "\n";
