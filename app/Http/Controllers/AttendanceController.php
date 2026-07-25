@@ -301,16 +301,20 @@ class AttendanceController extends Controller
 
             foreach ($empData['harian'] as $date => &$dayData) {
                 if ($dayData['masuk'] && $dayData['pulang']) {
-                    $masuk = \Carbon\Carbon::parse($dayData['masuk']);
-                    $pulang = \Carbon\Carbon::parse($dayData['pulang']);
+                    
+                    // PERBAIKAN: Tambahkan ->startOfMinute() agar detik di-reset ke 00
+                    $masuk = \Carbon\Carbon::parse($dayData['masuk'])->startOfMinute();
+                    $pulang = \Carbon\Carbon::parse($dayData['pulang'])->startOfMinute();
                     
                     $totalMinutes = $masuk->diffInMinutes($pulang);
 
                     $leaveMinutes = 0;
                     $leaveCount = min(count($dayData['leave']), count($dayData['kembali']));
                     for ($i = 0; $i < $leaveCount; $i++) {
-                        $leaveStart = \Carbon\Carbon::parse($dayData['leave'][$i]);
-                        $leaveEnd = \Carbon\Carbon::parse($dayData['kembali'][$i]);
+                        // PERBAIKAN: Tambahkan juga ->startOfMinute() di sini
+                        $leaveStart = \Carbon\Carbon::parse($dayData['leave'][$i])->startOfMinute();
+                        $leaveEnd = \Carbon\Carbon::parse($dayData['kembali'][$i])->startOfMinute();
+                        
                         $leaveMinutes += $leaveStart->diffInMinutes($leaveEnd);
                     }
 
