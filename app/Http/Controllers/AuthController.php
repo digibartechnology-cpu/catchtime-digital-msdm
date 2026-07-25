@@ -18,7 +18,7 @@ class AuthController extends Controller
             $user = new User();
             $user->username = 'admin';  // Ini yang diminta oleh error barusan!
             $user->name = 'Admin DigiBAR';
-            $user->password = \Illuminate\Support\Facades\Hash::make('admin');
+            $user->password = \Illuminate\Support\Facades\Hash::make('catchtime');
             $user->save();
         }
 
