@@ -5,28 +5,37 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
     public function login(Request $request)
     {
-        // 1. Cari user dengan username 'admin'
-        $user = User::where('username', 'admin')->first();
+        // 1. Validasi inputan dari form login
+        $request->validate([
+            'username' => 'required',
+            'password' => 'required',
+        ]);
 
-        // 2. Jika belum ada, kita buatkan secara manual untuk menghindari error NOT NULL
+        // 2. Cek apakah akun default 'admin-catchtime' sudah ada di database, jika belum buatkan otomatis
+        $user = User::where('username', 'admin-catchtime')->first();
+
         if (!$user) {
             $user = new User();
-            $user->username = 'admin';  // Ini yang diminta oleh error barusan!
-            $user->name = 'Admin DigiBAR';
-            $user->password = \Illuminate\Support\Facades\Hash::make('catchtime');
+            $user->name = 'Admin CatchTime';
+            $user->username = 'admin-catchtime';
+            $user->password = Hash::make('catchtime');
             $user->save();
         }
 
-        // 3. Langsung paksa masuk
-        Auth::login($user);
+        // 3. Verifikasi username dan password yang diinput user
+        if ($request->username === $user->username && Hash::check($request->password, $user->password)) {
+            Auth::login($user);
+            return redirect('/admin/dashboard')->with('success', 'Berhasil login!');
+        }
 
-        // 4. Terobos ke dashboard
-        return redirect('/admin/dashboard');
+        // 4. Jika gagal, kembalikan ke halaman login dengan pesan error
+        return back()->withErrors(['username' => 'Username atau password salah!'])->withInput();
     }
 
     public function logout(Request $request)
