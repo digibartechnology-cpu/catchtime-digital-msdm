@@ -240,12 +240,21 @@ class AttendanceController extends Controller
     }
 
     public function downloadPdf(Request $request) {
+        // Beri kelonggaran waktu eksekusi dan memori server cloud
+        ini_set('max_execution_time', 300);
+        ini_set('memory_limit', '512M');
+
         $query = \App\Models\Attendance::with('employee');
         if ($request->start_date && $request->end_date) {
             $query->whereBetween('created_at', [$request->start_date.' 00:00:00', $request->end_date.' 23:59:59']);
         }
         
         $attendances = $query->orderBy('employee_id')->orderBy('created_at', 'asc')->get();
+
+        // PENCEGAHAN: Jika data kosong, cegah error gateway cloud terputus
+        if ($attendances->isEmpty()) {
+            return back()->with('error', 'Data absensi kosong pada rentang tanggal tersebut, tidak dapat mencetak PDF.');
+        }
 
         $reportData = [];
 
@@ -273,9 +282,6 @@ class AttendanceController extends Controller
             }
 
             $time = $absen->created_at;
-            
-            // PERBAIKAN: Ubah ke huruf kecil semua dan gunakan pencarian kata kunci 
-            // agar kebal terhadap perubahan ejaan di database
             $typeLokal = strtolower($absen->type);
 
             if (str_contains($typeLokal, 'masuk')) {
@@ -291,18 +297,15 @@ class AttendanceController extends Controller
 
         // 2. Kalkulasi Jam Kerja & Total Periode
         foreach ($reportData as $empId => &$empData) {
-            $totalMenitPeriode = 0; // TAHAP BARU: Inisialisasi wadah penampung total menit
+            $totalMenitPeriode = 0;
 
             foreach ($empData['harian'] as $date => &$dayData) {
                 if ($dayData['masuk'] && $dayData['pulang']) {
-                    // Di-parse ulang sebagai Carbon murni agar selisih waktu 100% akurat
                     $masuk = \Carbon\Carbon::parse($dayData['masuk']);
                     $pulang = \Carbon\Carbon::parse($dayData['pulang']);
                     
-                    // Hitung total durasi dari jam masuk sampai jam pulang dalam hitungan MENIT
                     $totalMinutes = $masuk->diffInMinutes($pulang);
 
-                    // Hitung total durasi ijin keluar dalam hitungan MENIT
                     $leaveMinutes = 0;
                     $leaveCount = min(count($dayData['leave']), count($dayData['kembali']));
                     for ($i = 0; $i < $leaveCount; $i++) {
@@ -311,22 +314,16 @@ class AttendanceController extends Controller
                         $leaveMinutes += $leaveStart->diffInMinutes($leaveEnd);
                     }
 
-                    // Pengurangan jam kerja (Jam Kotor - Durasi Ijin)
                     $netMinutes = $totalMinutes - $leaveMinutes;
-                    
-                    // Pastikan tidak ada angka minus jika ada kesalahan input
                     if ($netMinutes < 0) $netMinutes = 0; 
 
-                    // TAHAP BARU: Tambahkan menit bersih harian ke total menit periode
                     $totalMenitPeriode += $netMinutes;
 
-                    // Konversi total menit kembali ke format Jam dan Menit (Harian)
                     $hours = floor($netMinutes / 60);
                     $minutes = $netMinutes % 60;
                     
                     $dayData['total_jam_text'] = $hours . ' Jam ' . $minutes . ' Menit';
                     
-                    // Format tampilan tulisan durasi ijin
                     if ($leaveMinutes > 0) {
                         $leaveH = floor($leaveMinutes / 60);
                         $leaveM = $leaveMinutes % 60;
@@ -341,7 +338,6 @@ class AttendanceController extends Controller
                 }
             }
 
-            // TAHAP BARU: Konversi total keseluruhan menit menjadi Jam dan Menit untuk Footer PDF
             $jamPeriode = floor($totalMenitPeriode / 60);
             $menitPeriode = $totalMenitPeriode % 60;
             $empData['total_jam_periode'] = $jamPeriode . ' Jam ' . $menitPeriode . ' Menit';

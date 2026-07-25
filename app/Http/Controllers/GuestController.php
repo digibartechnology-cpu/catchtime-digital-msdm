@@ -66,8 +66,13 @@ class GuestController extends Controller
     }
 
     // 3. Download Laporan PDF
+    // 3. Download Laporan PDF
     public function downloadPdf(Request $request)
     {
+        // Beri kelonggaran waktu eksekusi dan memori server cloud
+        ini_set('max_execution_time', 300);
+        ini_set('memory_limit', '512M');
+
         $startDate = $request->start_date;
         $endDate = $request->end_date;
         $query = Guest::query();
@@ -77,6 +82,12 @@ class GuestController extends Controller
         }
 
         $guests = $query->latest()->get();
+
+        // PENCEGAHAN: Jika data tamu kosong
+        if ($guests->isEmpty()) {
+            return back()->with('error', 'Data buku tamu kosong pada rentang tanggal tersebut, tidak dapat mencetak PDF.');
+        }
+
         $pdf = Pdf::loadView('admin.guest_pdf', compact('guests', 'startDate', 'endDate'));
         return $pdf->download('Laporan_Buku_Tamu.pdf');
     }
