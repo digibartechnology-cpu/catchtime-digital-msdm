@@ -81,7 +81,7 @@
                         <!-- Video stream dari kamera dengan CSS Flip -->
                         <video id="kamera" autoplay playsinline class="absolute inset-0 w-full h-full object-cover" style="transform: scaleX(-1);"></video>
                         <!-- Preview foto yang sudah dijepret dengan CSS Flip -->
-                        <img id="hasilPreview" class="absolute inset-0 w-full h-full object-cover hidden" style="transform: scaleX(-1);">
+                        <img id="hasilPreview" class="absolute inset-0 w-full h-full object-cover hidden">
                         <!-- Canvas tersembunyi untuk proses gambar -->
                         <canvas id="canvas" class="hidden"></canvas>
                     </div>
