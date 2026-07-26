@@ -74,14 +74,14 @@
                     <input type="text" name="alasan_lainnya" id="input_alasan_lainnya" class="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-sm" placeholder="Ketik alasan spesifik">
                 </div>
 
-                <!-- Modifikasi Bagian Kamera -->
+                <!-- Modifikasi Bagian Kamera (Anti Mirror) -->
                 <div id="container_foto" class="mb-8">
                     <label class="block text-gray-700 text-sm font-semibold mb-2">Bukti Kehadiran (Foto)</label>
                     <div class="relative bg-gray-200 rounded-xl overflow-hidden aspect-[3/4] flex items-center justify-center border-2 border-dashed border-gray-400">
-                        <!-- Video stream dari kamera -->
-                        <video id="kamera" autoplay playsinline class="absolute inset-0 w-full h-full object-cover"></video>
-                        <!-- Preview foto yang sudah dijepret -->
-                        <img id="hasilPreview" class="absolute inset-0 w-full h-full object-cover hidden">
+                        <!-- Video stream dari kamera dengan CSS Flip -->
+                        <video id="kamera" autoplay playsinline class="absolute inset-0 w-full h-full object-cover" style="transform: scaleX(-1);"></video>
+                        <!-- Preview foto yang sudah dijepret dengan CSS Flip -->
+                        <img id="hasilPreview" class="absolute inset-0 w-full h-full object-cover hidden" style="transform: scaleX(-1);">
                         <!-- Canvas tersembunyi untuk proses gambar -->
                         <canvas id="canvas" class="hidden"></canvas>
                     </div>
@@ -138,7 +138,7 @@
         }
 
         // ==========================================
-        // LOGIKA KAMERA & CAPTURE FOTO
+        // LOGIKA KAMERA & CAPTURE FOTO (ANTI MIRROR)
         // ==========================================
         const video = document.getElementById('kamera');
         const canvas = document.getElementById('canvas');
@@ -161,7 +161,13 @@
         btnJepret.addEventListener('click', () => {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // --- LOGIKA UN-MIRROR CANVAS ---
+            const ctx = canvas.getContext('2d');
+            ctx.translate(canvas.width, 0); // Geser posisi titik awal
+            ctx.scale(-1, 1); // Balikkan gambar secara horizontal
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            // --- AKHIR LOGIKA UN-MIRROR ---
             
             // Konversi ke format Base64
             const dataURL = canvas.toDataURL('image/png');
