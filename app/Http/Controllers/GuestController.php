@@ -53,7 +53,7 @@ class GuestController extends Controller
 
         // KIRIM WA (Fix cURL error 77 dan cegah error env di Laravel Cloud)
         $token = env('FONNTE_TOKEN', 'KvH5jtTzc6yagwZsy6qa');
-        $target = env('WA_HRD', '6281348467817'); // <-- INI NOMOR PENERIMA
+        $target = env('WA_HRD', '628984715214'); // <-- INI NOMOR PENERIMA
 
         \Illuminate\Support\Facades\Http::withoutVerifying()->withHeaders([
             'Authorization' => $token,
