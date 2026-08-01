@@ -163,37 +163,43 @@
                                 </thead>
                                 <tbody class="text-gray-700 text-sm">
                                     @forelse($attendances as $index => $absen)
-                                    @php
-                                        $jamAbsen = $absen->created_at->format('H:i');
-                                        $statusWaktu = '-';
-                                        $badgeColor = 'bg-gray-100 text-gray-800 border-gray-200';
+                                @php
+                                $jamAbsen = $absen->created_at->format('H:i');
+                                $statusWaktu = '-';
+                                $badgeColor = 'bg-gray-100 text-gray-800 border-gray-200';
 
-                                        if ($absen->type == 'Masuk') {
-                                            if ($jamAbsen > '09:00') {
-                                                $statusWaktu = 'Telat';
-                                                $badgeColor = 'bg-red-100 text-red-800 border-red-200';
-                                            } else {
-                                                $statusWaktu = 'On Time';
-                                                $badgeColor = 'bg-green-100 text-green-800 border-green-200';
-                                            }
-                                        } elseif ($absen->type == 'Pulang') {
-                                            if ($jamAbsen < '17:00') {
-                                                $statusWaktu = 'Pulang Awal';
-                                                $badgeColor = 'bg-yellow-100 text-yellow-800 border-yellow-200';
-                                            } else {
-                                                $statusWaktu = 'On Time';
-                                                $badgeColor = 'bg-green-100 text-green-800 border-green-200';
-                                            }
-                                        } else {
-                                            $statusWaktu = 'Terverifikasi';
-                                            $badgeColor = 'bg-blue-100 text-blue-800 border-blue-200';
-                                        }
+                                if ($absen->type == 'Masuk') {
+                                    if ($jamAbsen > '09:00') {
+                                        $statusWaktu = 'Telat';
+                                        $badgeColor = 'bg-red-100 text-red-800 border-red-200';
+                                    } else {
+                                        $statusWaktu = 'On Time';
+                                        $badgeColor = 'bg-green-100 text-green-800 border-green-200';
+                                    }
+                                } elseif ($absen->type == 'Pulang') {
+                                    if ($jamAbsen < '17:00') {
+                                        $statusWaktu = 'Pulang Awal';
+                                        $badgeColor = 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                                    } else {
+                                        $statusWaktu = 'On Time';
+                                        $badgeColor = 'bg-green-100 text-green-800 border-green-200';
+                                    }
+                                } elseif ($absen->type == 'Ijin Keluar') {
+                                    $statusWaktu = 'Keluar Sementara';
+                                    $badgeColor = 'bg-orange-100 text-orange-800 border-orange-200';
+                                } elseif ($absen->type == 'Kembali Ijin') {
+                                    $statusWaktu = 'Kembali Bekerja';
+                                    $badgeColor = 'bg-teal-100 text-teal-800 border-teal-200';
+                                } else {
+                                    $statusWaktu = 'Terverifikasi';
+                                    $badgeColor = 'bg-blue-100 text-blue-800 border-blue-200';
+                                }
 
-                                        $urlFoto = '';
-                                        if ($absen->foto_bukti && $absen->foto_bukti !== 'Tanpa Foto' && $absen->foto_bukti !== 'default.png') {
-                                            $urlFoto = asset('images/absensi/' . $absen->foto_bukti);
-                                        }
-                                    @endphp
+                                $urlFoto = '';
+                                if ($absen->foto_bukti && $absen->foto_bukti !== 'Tanpa Foto' && $absen->foto_bukti !== 'default.png') {
+                                    $urlFoto = asset('images/absensi/' . $absen->foto_bukti);
+                                }
+                            @endphp
 
                                     <tr class="hover:bg-gray-50 border-b border-gray-50 transition-colors">
                                         <td class="p-4 text-xs text-gray-400">{{ $index + 1 }}</td>

@@ -81,16 +81,19 @@ class AttendanceController extends Controller
         $request->validate([
             'employee_id' => 'required',
             'type' => 'required',
-            'foto_bukti' => 'required_unless:type,Leave Office|nullable|string', 
+            'foto_bukti' => 'nullable|string', 
         ]);
+
+        $tipeAbsen = $request->type;
+        $isIjin = in_array($tipeAbsen, ['Leave Office', 'Ijin Keluar']);
 
         $sudahAbsen = Attendance::where('employee_id', $request->employee_id)
             ->whereDate('created_at', Carbon::today())
-            ->where('type', $request->type)
+            ->where('type', $tipeAbsen)
             ->exists();
 
         if ($sudahAbsen) {
-            return back()->withErrors(['pesan' => 'AKSES DITOLAK: Anda sudah melakukan absensi "' . $request->type . '" hari ini.']);
+            return back()->withErrors(['pesan' => 'AKSES DITOLAK: Anda sudah melakukan absensi "' . $tipeAbsen . '" hari ini.']);
         }
 
         $absenTerakhir = Attendance::where('employee_id', $request->employee_id)
@@ -98,71 +101,66 @@ class AttendanceController extends Controller
                         ->orderBy('created_at', 'desc')
                         ->first();
 
-        if ($request->type === 'Pulang' && $absenTerakhir && $absenTerakhir->type === 'Leave Office') {
-            return back()->withErrors(['pesan' => 'AKSES DITOLAK: Anda masih berstatus "Leave Office". Harap lapor "Kembali ke Kantor" terlebih dahulu.']);
+        // FIX: Tangkap jika dia Pulang tapi masih status Ijin
+        if ($tipeAbsen === 'Pulang' && $absenTerakhir && in_array($absenTerakhir->type, ['Leave Office', 'Ijin Keluar'])) {
+            return back()->withErrors(['pesan' => 'AKSES DITOLAK: Anda masih berstatus "Ijin Keluar". Harap lapor "Kembali" terlebih dahulu.']);
         }
 
         $keterangan_alasan = null;
-        if ($request->type === 'Leave Office') {
+        if ($isIjin) {
             $keterangan_alasan = ($request->alasan_ijin === 'Lainnya') ? $request->alasan_lainnya : $request->alasan_ijin;
         }
 
         $imageName = 'Tanpa Foto'; 
         if ($request->filled('foto_bukti') && str_contains($request->foto_bukti, 'base64')) {
             try {
-                // Memecah teks base64 dari kamera
                 $image_parts = explode(";base64,", $request->foto_bukti);
                 $image_type_aux = explode("image/", $image_parts[0]);
                 $image_type = $image_type_aux[1];
                 $image_base64 = base64_decode($image_parts[1]);
                 
-                // Buat nama file unik
                 $imageName = time() . '_' . uniqid() . '.' . $image_type;
                 $path = 'absensi/' . $imageName;
                 
-                // Simpan gambar ke Cloud (S3/Cloudflare R2)
                 Storage::disk('s3')->put($path, $image_base64, 'public');
-
             } catch (\Exception $e) {
                 return back()->withErrors(['pesan' => 'Gagal mengunggah foto ke Cloud: ' . $e->getMessage()]);
             }
         }
+        
         $absenBaru = Attendance::create([
-        'employee_id' => $request->employee_id,
-        'type' => $request->type,
-        'foto_bukti' => $imageName,
-        'keterangan' => $keterangan_alasan 
-    ]);
+            'employee_id' => $request->employee_id,
+            'type' => $tipeAbsen,
+            'foto_bukti' => $imageName,
+            'keterangan' => $keterangan_alasan 
+        ]);
 
-    $absenBaru->load('employee'); 
+        $absenBaru->load('employee'); 
 
-    // --- AWAL TAMBAHAN LOGIKA JAM KERJA ---
-    $jamAbsen = now()->timezone('Asia/Jakarta')->format('H:i');
-    $statusWaktu = '';
-    
-    if ($absenBaru->type == 'Masuk') {
-        $statusWaktu = ($jamAbsen > '09:00') ? '🔴 *TELAT*' : '🟢 *On Time*';
-    } elseif ($absenBaru->type == 'Pulang') {
-        $statusWaktu = ($jamAbsen < '17:00') ? '🟡 *Pulang Awal*' : '🟢 *On Time*';
-    } elseif ($absenBaru->type == 'Leave Office') {
-        $statusWaktu = '🔵 *Ijin Keluar*';
-    }
-    // --- AKHIR TAMBAHAN LOGIKA JAM KERJA ---
+        $jamAbsen = now()->timezone('Asia/Jakarta')->format('H:i');
+        $statusWaktu = '';
+        
+        if ($absenBaru->type == 'Masuk') {
+            $statusWaktu = ($jamAbsen > '09:00') ? '🔴 *TELAT*' : '🟢 *On Time*';
+        } elseif ($absenBaru->type == 'Pulang') {
+            $statusWaktu = ($jamAbsen < '17:00') ? '🟡 *Pulang Awal*' : '🟢 *On Time*';
+        } elseif ($isIjin) {
+            $statusWaktu = '🔵 *Ijin Keluar*';
+        }
 
-    $pesanWA = "📌 *ABSENSI KARYAWAN*\n👤 Nama: " . $absenBaru->employee->nama_lengkap . "\n📅 Tipe: " . $absenBaru->type;
-    
-    // Menyisipkan status waktu ke pesan WA
-    if ($statusWaktu != '') {
-        $pesanWA .= "\n🚦 Status: " . $statusWaktu;
-    }
+        $pesanWA = "📌 *ABSENSI KARYAWAN*\n👤 Nama: " . $absenBaru->employee->nama_lengkap . "\n📅 Tipe: " . $absenBaru->type;
+        
+        if ($statusWaktu != '') {
+            $pesanWA .= "\n🚦 Status: " . $statusWaktu;
+        }
 
-    if ($keterangan_alasan) {
-        $pesanWA .= "\n📝 Keterangan: " . $keterangan_alasan;
-    }
-    
-    $this->sendWhatsappNotification($pesanWA);
+        if ($keterangan_alasan) {
+            $pesanWA .= "\n📝 Keterangan: " . $keterangan_alasan;
+        }
+        
+        $this->sendWhatsappNotification($pesanWA);
 
-        if ($request->type === 'Leave Office') {
+        if ($isIjin) {
             session(['kunci_ijin_keluar' => $absenBaru->id]);
             return redirect('/absen/terkunci');
         }
@@ -180,10 +178,11 @@ class AttendanceController extends Controller
             $absenLama = Attendance::find($idAbsenKeluar);
         }
 
+        // FIX: Tambahkan whereIn untuk menangkap Ijin Keluar bahasa lokal
         if (!$absenLama && $employeeId) {
             $absenLama = Attendance::where('employee_id', $employeeId)
                             ->whereDate('created_at', Carbon::today())
-                            ->where('type', 'Leave Office')
+                            ->whereIn('type', ['Leave Office', 'Ijin Keluar'])
                             ->latest()
                             ->first();
         }
@@ -191,7 +190,7 @@ class AttendanceController extends Controller
         if ($absenLama) {
             $absenKembali = Attendance::create([
                 'employee_id' => $absenLama->employee_id,
-                'type' => 'Kembali ke Kantor',
+                'type' => 'Kembali Ijin',
                 'foto_bukti' => 'Tanpa Foto',
                 'keterangan' => 'Selesai Ijin: ' . ($absenLama->keterangan ?? '-')
             ]);
@@ -309,11 +308,17 @@ class AttendanceController extends Controller
                     $totalMinutes = $masuk->diffInMinutes($pulang);
 
                     $leaveMinutes = 0;
-                    $leaveCount = min(count($dayData['leave']), count($dayData['kembali']));
+                    $leaveCount = count($dayData['leave']); // FIX: Hitung berapapun ijinnya
+                    
                     for ($i = 0; $i < $leaveCount; $i++) {
-                        // PERBAIKAN: Tambahkan juga ->startOfMinute() di sini
                         $leaveStart = \Carbon\Carbon::parse($dayData['leave'][$i])->startOfMinute();
-                        $leaveEnd = \Carbon\Carbon::parse($dayData['kembali'][$i])->startOfMinute();
+                        
+                        // FIX: Jika dia lupa klik "Kembali", potong jamnya sampai waktu dia klik "Pulang"
+                        if (isset($dayData['kembali'][$i])) {
+                            $leaveEnd = \Carbon\Carbon::parse($dayData['kembali'][$i])->startOfMinute();
+                        } else {
+                            $leaveEnd = \Carbon\Carbon::parse($dayData['pulang'])->startOfMinute();
+                        }
                         
                         $leaveMinutes += $leaveStart->diffInMinutes($leaveEnd);
                     }
