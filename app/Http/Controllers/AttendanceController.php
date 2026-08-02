@@ -180,14 +180,18 @@ class AttendanceController extends Controller
             $absenLama = Attendance::find($idAbsenKeluar);
         }
 
-        // FIX: Tambahkan whereIn untuk menangkap Ijin Keluar bahasa lokal
         if (!$absenLama && $employeeId) {
             $absenLama = Attendance::where('employee_id', $employeeId)
-                            ->whereDate('created_at', Carbon::today())
+                            ->whereDate('created_at', \Carbon\Carbon::today())
                             ->whereIn('type', ['Leave Office', 'Ijin Keluar'])
-                            ->latest()
+                            ->orderBy('id', 'desc')
                             ->first();
         }
+
+        // --- PENGHANCUR GEMBOK (JAMINAN PASTI LEPAS) ---
+        $request->session()->forget('kunci_ijin_keluar');
+        $request->session()->save(); 
+        // -----------------------------------------------
 
         if ($absenLama) {
             $absenKembali = Attendance::create([
@@ -202,11 +206,12 @@ class AttendanceController extends Controller
                 $pesanWA = "📌 *UPDATE ABSENSI*\n👤 Nama: " . $absenKembali->employee->nama_lengkap . "\n📅 Tipe: " . $absenKembali->type;
                 $this->sendWhatsappNotification($pesanWA);
             }
-            session()->forget('kunci_ijin_keluar');
+            
             return redirect('/')->with('success', 'Status diperbarui. Selamat bekerja kembali!');
         }
 
-        return back()->withErrors(['pesan' => 'Gagal memperbarui status: Sesi absensi tidak ditemukan. Silakan hubungi HRD.']);
+        // Jika data lama tidak ditemukan (karena dihapus manual), tetap kembali tanpa error
+        return redirect('/')->with('success', 'Gembok berhasil direset.');
     }
 
     private function sendWhatsappNotification($message)
