@@ -96,11 +96,10 @@ class AttendanceController extends Controller
             return back()->withErrors(['pesan' => 'AKSES DITOLAK: Anda sudah melakukan absensi "' . $tipeAbsen . '" hari ini.']);
         }
 
-        // LOGIKA PENGECEKAN PULANG
         if ($tipeAbsen === 'Pulang') {
             $absenTerakhir = Attendance::where('employee_id', $request->employee_id)
                             ->whereDate('created_at', Carbon::today())
-                            ->orderBy('created_at', 'desc')
+                            ->orderBy('id', 'desc') // <--- INI KUNCI FINALNYA
                             ->first();
 
             // Cukup cek status yang paling terakhir saja
