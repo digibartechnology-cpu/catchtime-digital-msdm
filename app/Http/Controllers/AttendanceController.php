@@ -96,12 +96,7 @@ class AttendanceController extends Controller
             return back()->withErrors(['pesan' => 'AKSES DITOLAK: Anda sudah melakukan absensi "' . $tipeAbsen . '" hari ini.']);
         }
 
-        $absenTerakhir = Attendance::where('employee_id', $request->employee_id)
-                        ->whereDate('created_at', Carbon::today())
-                        ->orderBy('created_at', 'desc')
-                        ->first();
-
-        // FIX: Tangkap jika dia Pulang tapi masih status Ijin
+        // LOGIKA PENGECEKAN PULANG
         if ($tipeAbsen === 'Pulang') {
             $absenTerakhir = Attendance::where('employee_id', $request->employee_id)
                             ->whereDate('created_at', Carbon::today())
@@ -111,6 +106,13 @@ class AttendanceController extends Controller
             // Cukup cek status yang paling terakhir saja
             if ($absenTerakhir && in_array($absenTerakhir->type, ['Leave Office', 'Ijin Keluar'])) {
                 return back()->withErrors(['pesan' => 'AKSES DITOLAK: Anda masih berstatus "Ijin Keluar". Harap lapor "Kembali" terlebih dahulu.']);
+            }
+        }
+
+        $keterangan_alasan = null;
+        if ($isIjin) {
+            $keterangan_alasan = ($request->alasan_ijin === 'Lainnya') ? $request->alasan_lainnya : $request->alasan_ijin;
+        }
 
         $imageName = 'Tanpa Foto'; 
         if ($request->filled('foto_bukti') && str_contains($request->foto_bukti, 'base64')) {
