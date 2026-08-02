@@ -187,7 +187,7 @@
                                 } elseif ($absen->type == 'Ijin Keluar') {
                                     $statusWaktu = 'Keluar Sementara';
                                     $badgeColor = 'bg-orange-100 text-orange-800 border-orange-200';
-                                } elseif ($absen->type == 'Kembali Ijin') {
+                                } elseif (in_array($absen->type, ['Kembali Ijin', 'Kembali ke Kantor'])) {
                                     $statusWaktu = 'Kembali Bekerja';
                                     $badgeColor = 'bg-teal-100 text-teal-800 border-teal-200';
                                 } else {
