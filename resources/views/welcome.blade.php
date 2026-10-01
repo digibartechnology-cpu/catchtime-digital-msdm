@@ -108,7 +108,7 @@
             document.getElementById('greeting').innerHTML = `
                 ${greeting}<br> 
                 <span class="text-xl font-medium text-gray-600 mt-2 block">
-                    Selamat Datang di Kantor <span class="text-blue-600 font-bold">PT Loka Karya Nusantara</span>
+                    Selamat Datang di Kantor <span class="text-blue-600 font-bold">PT Loka Karya Nusantara\</span>
                 </span>
             `;
 

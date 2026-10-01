@@ -28,53 +28,45 @@ class AttendanceController extends Controller
     }
 
     public function adminStore(Request $request)
-{
-    $request->validate([
-        'employee_id' => 'required',
-        'type' => 'required|in:Masuk,Pulang',
-        'foto_bukti' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-    ]);
+    {
+        $request->validate([
+            'employee_id' => 'required',
+            'type' => 'required|in:Masuk,Pulang',
+            'foto_bukti' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
 
-    $imageName = 'default.png';
-    
-    // --- UBAH BAGIAN INI ---
-    if ($request->hasFile('foto_bukti')) {
-        $imageName = time() . '_' . uniqid() . '.' . $request->foto_bukti->extension();
+        $imageName = 'default.png';
         
-        // Upload file biasa ke Cloud (S3) di folder 'absensi'
-        $request->file('foto_bukti')->storeAs('absensi', $imageName, 's3', 'public');
+        if ($request->hasFile('foto_bukti')) {
+            $imageName = time() . '_' . uniqid() . '.' . $request->foto_bukti->extension();
+            $request->file('foto_bukti')->storeAs('absensi', $imageName, 's3', 'public');
+        }
+
+        $attendance = Attendance::create([
+            'employee_id' => $request->employee_id,
+            'type' => $request->type,
+            'foto_bukti' => $imageName,
+        ]);
+
+        $jamAbsen = now()->timezone('Asia/Jakarta')->format('H:i');
+        $statusWaktu = '';
+        
+        if ($attendance->type == 'Masuk') {
+            $statusWaktu = ($jamAbsen > '09:00') ? '🔴 *TELAT*' : '🟢 *On Time*';
+        } elseif ($attendance->type == 'Pulang') {
+            $statusWaktu = ($jamAbsen < '17:00') ? '🟡 *Pulang Awal*' : '🟢 *On Time*';
+        }
+
+        $pesanWA = "📌 *ABSENSI MANUAL (ADMIN)*\n👤 Nama: " . $attendance->employee->nama_lengkap . "\n📅 Tipe: " . $attendance->type;
+        
+        if ($statusWaktu != '') {
+            $pesanWA .= "\n🚦 Status: " . $statusWaktu;
+        }
+
+        $this->sendWhatsappNotification($pesanWA);
+
+        return redirect()->route('admin.absensi.index')->with('success', 'Data tersimpan & WA Terkirim!');
     }
-    // -----------------------
-
-    $attendance = Attendance::create([
-        'employee_id' => $request->employee_id,
-        'type' => $request->type,
-        'foto_bukti' => $imageName,
-    ]);
-
-    // --- AWAL TAMBAHAN LOGIKA JAM KERJA ---
-    // Menggunakan timezone WIB agar akurat dengan jam lokal Pontianak
-    $jamAbsen = now()->timezone('Asia/Jakarta')->format('H:i');
-    $statusWaktu = '';
-    
-    if ($attendance->type == 'Masuk') {
-        $statusWaktu = ($jamAbsen > '09:00') ? '🔴 *TELAT*' : '🟢 *On Time*';
-    } elseif ($attendance->type == 'Pulang') {
-        $statusWaktu = ($jamAbsen < '17:00') ? '🟡 *Pulang Awal*' : '🟢 *On Time*';
-    }
-    // --- AKHIR TAMBAHAN LOGIKA JAM KERJA ---
-
-    $pesanWA = "📌 *ABSENSI MANUAL (ADMIN)*\n👤 Nama: " . $attendance->employee->nama_lengkap . "\n📅 Tipe: " . $attendance->type;
-    
-    // Menyisipkan status waktu ke pesan WA
-    if ($statusWaktu != '') {
-        $pesanWA .= "\n🚦 Status: " . $statusWaktu;
-    }
-
-    $this->sendWhatsappNotification($pesanWA);
-
-    return redirect()->route('admin.absensi.index')->with('success', 'Data tersimpan & WA Terkirim!');
-}
 
     public function userStore(Request $request)
     {
@@ -87,24 +79,30 @@ class AttendanceController extends Controller
         $tipeAbsen = $request->type;
         $isIjin = in_array($tipeAbsen, ['Leave Office', 'Ijin Keluar']);
 
-        $sudahAbsen = Attendance::where('employee_id', $request->employee_id)
-            ->whereDate('created_at', Carbon::today())
-            ->where('type', $tipeAbsen)
-            ->exists();
-
-        if ($sudahAbsen) {
-            return back()->withErrors(['pesan' => 'AKSES DITOLAK: Anda sudah melakukan absensi "' . $tipeAbsen . '" hari ini.']);
-        }
-
-        if ($tipeAbsen === 'Pulang') {
-            $absenTerakhir = Attendance::where('employee_id', $request->employee_id)
-                            ->whereDate('created_at', Carbon::today())
-                            ->orderBy('id', 'desc') // <--- INI KUNCI FINALNYA
+        $absenTerakhir = Attendance::where('employee_id', $request->employee_id)
+                            ->orderBy('id', 'desc')
                             ->first();
 
-            // Cukup cek status yang paling terakhir saja
+        if ($tipeAbsen === 'Masuk') {
+            if ($absenTerakhir && $absenTerakhir->type === 'Masuk' && Carbon::parse($absenTerakhir->created_at)->diffInHours(now()) < 16) {
+                 return back()->withErrors(['pesan' => 'AKSES DITOLAK: Anda masih berada dalam shift "Masuk". Silakan tap "Pulang" jika shift sudah selesai.']);
+            }
+        } elseif ($tipeAbsen === 'Pulang') {
+            $cekMasukTerakhir = Attendance::where('employee_id', $request->employee_id)
+                                ->where('type', 'Masuk')
+                                ->orderBy('id', 'desc')
+                                ->first();
+
+            if (!$cekMasukTerakhir) {
+                return back()->withErrors(['pesan' => 'AKSES DITOLAK: Tidak ditemukan data "Masuk" untuk dipasangkan dengan absen "Pulang" ini.']);
+            }
+
             if ($absenTerakhir && in_array($absenTerakhir->type, ['Leave Office', 'Ijin Keluar'])) {
                 return back()->withErrors(['pesan' => 'AKSES DITOLAK: Anda masih berstatus "Ijin Keluar". Harap lapor "Kembali" terlebih dahulu.']);
+            }
+
+            if ($absenTerakhir && $absenTerakhir->type === 'Pulang' && Carbon::parse($absenTerakhir->created_at)->diffInHours(now()) < 12) {
+                 return back()->withErrors(['pesan' => 'AKSES DITOLAK: Anda baru saja melakukan absensi "Pulang".']);
             }
         }
 
@@ -159,6 +157,12 @@ class AttendanceController extends Controller
         if ($keterangan_alasan) {
             $pesanWA .= "\n📝 Keterangan: " . $keterangan_alasan;
         }
+
+        if ($request->filled('latitude') && $request->filled('longitude')) {
+            $lat = $request->latitude;
+            $lng = $request->longitude;
+            $pesanWA .= "\n📍 Lokasi: https://www.google.com/maps?q={$lat},{$lng}";
+        }
         
         $this->sendWhatsappNotification($pesanWA);
 
@@ -182,16 +186,13 @@ class AttendanceController extends Controller
 
         if (!$absenLama && $employeeId) {
             $absenLama = Attendance::where('employee_id', $employeeId)
-                            ->whereDate('created_at', \Carbon\Carbon::today())
                             ->whereIn('type', ['Leave Office', 'Ijin Keluar'])
                             ->orderBy('id', 'desc')
                             ->first();
         }
 
-        // --- PENGHANCUR GEMBOK (JAMINAN PASTI LEPAS) ---
         $request->session()->forget('kunci_ijin_keluar');
         $request->session()->save(); 
-        // -----------------------------------------------
 
         if ($absenLama) {
             $absenKembali = Attendance::create([
@@ -204,20 +205,26 @@ class AttendanceController extends Controller
             $absenKembali->load('employee');
             if ($absenKembali->employee) {
                 $pesanWA = "📌 *UPDATE ABSENSI*\n👤 Nama: " . $absenKembali->employee->nama_lengkap . "\n📅 Tipe: " . $absenKembali->type;
+                
+                if ($request->filled('latitude') && $request->filled('longitude')) {
+                    $lat = $request->latitude;
+                    $lng = $request->longitude;
+                    $pesanWA .= "\n📍 Lokasi: https://www.google.com/maps?q={$lat},{$lng}";
+                }
+
                 $this->sendWhatsappNotification($pesanWA);
             }
             
             return redirect('/')->with('success', 'Status diperbarui. Selamat bekerja kembali!');
         }
 
-        // Jika data lama tidak ditemukan (karena dihapus manual), tetap kembali tanpa error
         return redirect('/')->with('success', 'Gembok berhasil direset.');
     }
 
     private function sendWhatsappNotification($message)
     {
         $token = env('FONNTE_TOKEN', 'KvH5jtTzc6yagwZsy6qa');
-        $target = env('WA_HRD', '628984715214'); // <-- INI NOMOR PENERIMA
+        $target = env('WA_HRD', '628984715214');
         
         \Illuminate\Support\Facades\Http::withoutVerifying()->withHeaders([
             'Authorization' => $token,
@@ -236,7 +243,8 @@ class AttendanceController extends Controller
         return view('absensi', compact('employees'));
     }
 
-    public function destroy($id) {
+    public function destroy($id) 
+    {
         $attendance = Attendance::findOrFail($id);
         if ($attendance->foto_bukti && $attendance->foto_bukti != 'default.png' && $attendance->foto_bukti != 'Tanpa Foto' && file_exists(public_path('images/absensi/'.$attendance->foto_bukti))) {
             unlink(public_path('images/absensi/'.$attendance->foto_bukti));
@@ -245,8 +253,8 @@ class AttendanceController extends Controller
         return back()->with('success', 'Data dihapus!');
     }
 
-    public function downloadPdf(Request $request) {
-        // Beri kelonggaran waktu eksekusi dan memori server cloud
+    public function downloadPdf(Request $request) 
+    {
         ini_set('max_execution_time', 300);
         ini_set('memory_limit', '512M');
 
@@ -257,18 +265,17 @@ class AttendanceController extends Controller
         
         $attendances = $query->orderBy('employee_id')->orderBy('created_at', 'asc')->get();
 
-        // PENCEGAHAN: Jika data kosong, cegah error gateway cloud terputus
         if ($attendances->isEmpty()) {
             return back()->with('error', 'Data absensi kosong pada rentang tanggal tersebut, tidak dapat mencetak PDF.');
         }
 
         $reportData = [];
-
-        // 1. Kelompokkan Data Berdasarkan Karyawan dan Tanggal
+        $shifts = [];
+        
         foreach ($attendances as $absen) {
-            $date = $absen->created_at->format('Y-m-d');
             $empId = $absen->employee_id;
-
+            $typeLokal = strtolower($absen->type);
+            
             if (!isset($reportData[$empId])) {
                 $reportData[$empId] = [
                     'nama' => $absen->employee->nama_lengkap ?? 'Karyawan Dihapus',
@@ -277,54 +284,51 @@ class AttendanceController extends Controller
                 ];
             }
 
-            if (!isset($reportData[$empId]['harian'][$date])) {
-                $reportData[$empId]['harian'][$date] = [
-                    'tanggal_format' => $absen->created_at->format('d M Y'),
-                    'masuk' => null,
+            if (str_contains($typeLokal, 'masuk')) {
+                $shiftId = 'shift_' . $absen->id; 
+                $reportData[$empId]['harian'][$shiftId] = [
+                    'tanggal_format' => $absen->created_at->format('d M Y (H:i)'),
+                    'masuk' => $absen->created_at,
                     'pulang' => null,
                     'leave' => [],
                     'kembali' => []
                 ];
-            }
-
-            $time = $absen->created_at;
-            $typeLokal = strtolower($absen->type);
-
-            if (str_contains($typeLokal, 'masuk')) {
-                $reportData[$empId]['harian'][$date]['masuk'] = $time;
-            } elseif (str_contains($typeLokal, 'pulang')) {
-                $reportData[$empId]['harian'][$date]['pulang'] = $time;
-            } elseif (str_contains($typeLokal, 'ijin') || str_contains($typeLokal, 'leave')) {
-                $reportData[$empId]['harian'][$date]['leave'][] = $time;
-            } elseif (str_contains($typeLokal, 'kembali')) {
-                $reportData[$empId]['harian'][$date]['kembali'][] = $time;
+                $shifts[$empId] = $shiftId; 
+            } elseif (isset($shifts[$empId])) {
+                $activeShift = $shifts[$empId];
+                
+                if (str_contains($typeLokal, 'pulang')) {
+                    $reportData[$empId]['harian'][$activeShift]['pulang'] = $absen->created_at;
+                    unset($shifts[$empId]); 
+                } elseif (str_contains($typeLokal, 'ijin') || str_contains($typeLokal, 'leave')) {
+                    $reportData[$empId]['harian'][$activeShift]['leave'][] = $absen->created_at;
+                } elseif (str_contains($typeLokal, 'kembali')) {
+                    $reportData[$empId]['harian'][$activeShift]['kembali'][] = $absen->created_at;
+                }
             }
         }
 
-        // 2. Kalkulasi Jam Kerja & Total Periode
         foreach ($reportData as $empId => &$empData) {
             $totalMenitPeriode = 0;
 
-            foreach ($empData['harian'] as $date => &$dayData) {
-                if ($dayData['masuk'] && $dayData['pulang']) {
+            foreach ($empData['harian'] as $shiftId => &$shiftData) {
+                if ($shiftData['masuk'] && $shiftData['pulang']) {
                     
-                    // PERBAIKAN: Tambahkan ->startOfMinute() agar detik di-reset ke 00
-                    $masuk = \Carbon\Carbon::parse($dayData['masuk'])->startOfMinute();
-                    $pulang = \Carbon\Carbon::parse($dayData['pulang'])->startOfMinute();
+                    $masuk = \Carbon\Carbon::parse($shiftData['masuk'])->startOfMinute();
+                    $pulang = \Carbon\Carbon::parse($shiftData['pulang'])->startOfMinute();
                     
                     $totalMinutes = $masuk->diffInMinutes($pulang);
 
                     $leaveMinutes = 0;
-                    $leaveCount = count($dayData['leave']); // FIX: Hitung berapapun ijinnya
+                    $leaveCount = count($shiftData['leave']);
                     
                     for ($i = 0; $i < $leaveCount; $i++) {
-                        $leaveStart = \Carbon\Carbon::parse($dayData['leave'][$i])->startOfMinute();
+                        $leaveStart = \Carbon\Carbon::parse($shiftData['leave'][$i])->startOfMinute();
                         
-                        // FIX: Jika dia lupa klik "Kembali", potong jamnya sampai waktu dia klik "Pulang"
-                        if (isset($dayData['kembali'][$i])) {
-                            $leaveEnd = \Carbon\Carbon::parse($dayData['kembali'][$i])->startOfMinute();
+                        if (isset($shiftData['kembali'][$i])) {
+                            $leaveEnd = \Carbon\Carbon::parse($shiftData['kembali'][$i])->startOfMinute();
                         } else {
-                            $leaveEnd = \Carbon\Carbon::parse($dayData['pulang'])->startOfMinute();
+                            $leaveEnd = \Carbon\Carbon::parse($shiftData['pulang'])->startOfMinute();
                         }
                         
                         $leaveMinutes += $leaveStart->diffInMinutes($leaveEnd);
@@ -338,19 +342,19 @@ class AttendanceController extends Controller
                     $hours = floor($netMinutes / 60);
                     $minutes = $netMinutes % 60;
                     
-                    $dayData['total_jam_text'] = $hours . ' Jam ' . $minutes . ' Menit';
+                    $shiftData['total_jam_text'] = $hours . ' Jam ' . $minutes . ' Menit';
                     
                     if ($leaveMinutes > 0) {
                         $leaveH = floor($leaveMinutes / 60);
                         $leaveM = $leaveMinutes % 60;
-                        $dayData['durasi_ijin'] = $leaveH . ' Jam ' . $leaveM . ' Menit';
+                        $shiftData['durasi_ijin'] = $leaveH . ' Jam ' . $leaveM . ' Menit';
                     } else {
-                        $dayData['durasi_ijin'] = '-';
+                        $shiftData['durasi_ijin'] = '-';
                     }
                     
                 } else {
-                    $dayData['total_jam_text'] = 'Data Tidak Lengkap (Lupa Absen)';
-                    $dayData['durasi_ijin'] = '-';
+                    $shiftData['total_jam_text'] = 'Sedang Bekerja / Belum Pulang';
+                    $shiftData['durasi_ijin'] = '-';
                 }
             }
 

@@ -150,10 +150,10 @@
             @forelse($reportData as $empId => $empData)
                 
                 <!-- Looping Data Harian -->
-                @foreach($empData['harian'] as $date => $dayData)
+                @foreach($empData['harian'] as $shiftId => $dayData)
                 <tr>
                     <td class="text-center">{{ $no++ }}</td>
-                    <td>
+                    <td>s
                         <strong>{{ $empData['nama'] }}</strong><br>
                         <span style="font-size: 9px; color: #666;">{{ $empData['jabatan'] }}</span>
                     </td>
