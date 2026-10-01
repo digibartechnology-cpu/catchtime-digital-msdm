@@ -195,11 +195,16 @@
                                     $badgeColor = 'bg-blue-100 text-blue-800 border-blue-200';
                                 }
 
+                                // LOGIKA PINTAR PENGECEKAN FOTO (Bisa S3 Cloud atau Lokal)
                                 $urlFoto = '';
                                 if ($absen->foto_bukti && $absen->foto_bukti !== 'Tanpa Foto' && $absen->foto_bukti !== 'default.png') {
-                                    $urlFoto = asset('images/absensi/' . $absen->foto_bukti);
+                                    if (env('FILESYSTEM_DISK') == 's3') {
+                                        $urlFoto = \Illuminate\Support\Facades\Storage::disk('s3')->url('absensi/' . $absen->foto_bukti);
+                                    } else {
+                                        $urlFoto = asset('images/absensi/' . $absen->foto_bukti);
+                                    }
                                 }
-                            @endphp
+                                @endphp
 
                                     <tr class="hover:bg-gray-50 border-b border-gray-50 transition-colors">
                                         <td class="p-4 text-xs text-gray-400">{{ $index + 1 }}</td>

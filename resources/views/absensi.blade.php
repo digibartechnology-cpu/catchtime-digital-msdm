@@ -69,28 +69,6 @@
                             <input type="radio" name="type" value="Pulang" x-model="tipeAbsen" class="peer sr-only">
                             <div class="px-4 py-3 text-center border-2 border-gray-200 rounded-lg peer-checked:bg-red-50 peer-checked:border-red-500 text-sm font-semibold text-gray-500 peer-checked:text-red-600 cursor-pointer transition-all">Pulang</div>
                         </label>
-                        <label class="col-span-2">
-                            <input type="radio" name="type" value="Leave Office" x-model="tipeAbsen" class="peer sr-only">
-                            <div class="px-4 py-3 text-center border-2 border-gray-200 rounded-lg peer-checked:bg-yellow-50 peer-checked:border-yellow-500 text-sm font-semibold text-gray-500 peer-checked:text-yellow-600 cursor-pointer transition-all">Ijin Keluar</div>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Bagian Ijin Keluar (Hanya muncul jika tipeAbsen == 'Leave Office') -->
-                <div x-show="tipeAbsen === 'Leave Office'" x-collapse>
-                    <div class="mb-5">
-                        <label class="block text-gray-700 text-sm font-semibold mb-2">Pilih Alasan Keluar</label>
-                        <select name="alasan_ijin" x-model="alasanIjin" :required="tipeAbsen === 'Leave Office'" class="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-sm">
-                            <option value="">-- Pilih Alasan --</option>
-                            <option value="Makan Siang">Makan Siang</option>
-                            <option value="Pergi ke Bank">Pergi ke Bank</option>
-                            <option value="Antarkan Dokumen">Antarkan Dokumen</option>
-                            <option value="Lainnya">Lainnya / Dll...</option>
-                        </select>
-                    </div>
-                    <div class="mb-5" x-show="alasanIjin === 'Lainnya'">
-                        <label class="block text-gray-700 text-sm font-semibold mb-2">Ketik Alasan Spesifik</label>
-                        <input type="text" name="alasan_lainnya" x-model="alasanLainnya" :required="alasanIjin === 'Lainnya'" class="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-sm" placeholder="Ketik alasan spesifik">
                     </div>
                 </div>
 
