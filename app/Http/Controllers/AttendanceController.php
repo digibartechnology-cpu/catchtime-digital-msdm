@@ -38,8 +38,14 @@ class AttendanceController extends Controller
         $imageName = 'default.png';
         
         if ($request->hasFile('foto_bukti')) {
-            $imageName = time() . '_' . uniqid() . '.' . $request->foto_bukti->extension();
-            $request->file('foto_bukti')->storeAs('absensi', $imageName, 's3', 'public');
+            // Cek otomatis apakah menggunakan S3 atau Lokal
+            if (config('filesystems.default') === 's3') {
+                $path = $request->file('foto_bukti')->store('absensi', 's3');
+                $imageName = basename($path);
+            } else {
+                $imageName = time() . '_' . uniqid() . '.' . $request->foto_bukti->extension();
+                $request->file('foto_bukti')->move(public_path('images/absensi'), $imageName);
+            }
         }
 
         $attendance = Attendance::create([
@@ -120,11 +126,19 @@ class AttendanceController extends Controller
                 $image_base64 = base64_decode($image_parts[1]);
                 
                 $imageName = time() . '_' . uniqid() . '.' . $image_type;
-                $path = 'absensi/' . $imageName;
                 
-                Storage::disk('s3')->put($path, $image_base64, 'public');
+                // Cek otomatis apakah menggunakan S3 atau Lokal
+                if (config('filesystems.default') === 's3') {
+                    Storage::disk('s3')->put('absensi/' . $imageName, $image_base64, 'public');
+                } else {
+                    $folderPath = public_path('images/absensi');
+                    if (!file_exists($folderPath)) {
+                        mkdir($folderPath, 0777, true);
+                    }
+                    file_put_contents($folderPath . '/' . $imageName, $image_base64);
+                }
             } catch (\Exception $e) {
-                return back()->withErrors(['pesan' => 'Gagal mengunggah foto ke Cloud: ' . $e->getMessage()]);
+                return back()->withErrors(['pesan' => 'Gagal mengunggah foto ke Sistem: ' . $e->getMessage()]);
             }
         }
         
@@ -246,9 +260,19 @@ class AttendanceController extends Controller
     public function destroy($id) 
     {
         $attendance = Attendance::findOrFail($id);
-        if ($attendance->foto_bukti && $attendance->foto_bukti != 'default.png' && $attendance->foto_bukti != 'Tanpa Foto' && file_exists(public_path('images/absensi/'.$attendance->foto_bukti))) {
-            unlink(public_path('images/absensi/'.$attendance->foto_bukti));
+        
+        // Hapus foto jika bukan default/kosong
+        if ($attendance->foto_bukti && $attendance->foto_bukti != 'default.png' && $attendance->foto_bukti != 'Tanpa Foto') {
+            if (config('filesystems.default') === 's3') {
+                Storage::disk('s3')->delete('absensi/' . $attendance->foto_bukti);
+            } else {
+                $localPath = public_path('images/absensi/' . $attendance->foto_bukti);
+                if (file_exists($localPath)) {
+                    unlink($localPath);
+                }
+            }
         }
+        
         $attendance->delete();
         return back()->with('success', 'Data dihapus!');
     }
