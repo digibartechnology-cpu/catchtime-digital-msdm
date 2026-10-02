@@ -195,16 +195,23 @@
                                     $badgeColor = 'bg-blue-100 text-blue-800 border-blue-200';
                                 }
 
-                                // LOGIKA PINTAR PENGECEKAN FOTO (Bisa S3 Cloud atau Lokal)
+                                // LOGIKA PINTAR PENGECEKAN FOTO (Menggunakan Config, bukan Env)
                                 $urlFoto = '';
                                 if ($absen->foto_bukti && $absen->foto_bukti !== 'Tanpa Foto' && $absen->foto_bukti !== 'default.png') {
-                                    if (env('FILESYSTEM_DISK') == 's3') {
+                                    
+                                    // 1. Jika nama file dari database sudah berupa link utuh (S3 / URL luar)
+                                    if (str_starts_with($absen->foto_bukti, 'http')) {
+                                        $urlFoto = $absen->foto_bukti;
+                                    } 
+                                    // 2. Jika menggunakan S3 (Membaca file config yang sudah di-cache Laravel Cloud)
+                                    elseif (config('filesystems.default') === 's3') {
                                         $urlFoto = \Illuminate\Support\Facades\Storage::disk('s3')->url('absensi/' . $absen->foto_bukti);
-                                    } else {
+                                    } 
+                                    // 3. Fallback jika terpaksa menggunakan penyimpanan lokal
+                                    else {
                                         $urlFoto = asset('images/absensi/' . $absen->foto_bukti);
                                     }
                                 }
-                                @endphp
 
                                     <tr class="hover:bg-gray-50 border-b border-gray-50 transition-colors">
                                         <td class="p-4 text-xs text-gray-400">{{ $index + 1 }}</td>

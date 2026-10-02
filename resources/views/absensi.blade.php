@@ -170,10 +170,21 @@
                                 this.locationReady = true;
                             },
                             (error) => {
-                                alert("Mohon izinkan akses Lokasi (GPS) agar bisa absen masuk/pulang.");
+                                // JIKA KARYAWAN MENOLAK IZIN LOKASI (ERROR CODE 1)
+                                if (error.code === 1) {
+                                    this.showErrorModal = true;
+                                    this.errorMessage = "⚠️ AKSES GPS DIBLOKIR!\n\nAnda tidak bisa melakukan absensi tanpa membagikan lokasi Anda. Silakan klik ikon gembok/pengaturan di samping alamat web pada browser Anda, ubah izin Lokasi menjadi 'Izinkan' (Allow), lalu refresh (muat ulang) halaman ini.";
+                                    
+                                    // Matikan kamera agar mereka sadar harus refresh
+                                    this.stopCamera(); 
+                                } else {
+                                    alert("Gagal mendapatkan lokasi. Pastikan GPS HP Anda menyala.");
+                                }
                             },
-                            { enableHighAccuracy: true }
+                            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
                         );
+                    } else {
+                        alert("Browser Anda tidak mendukung fitur Lokasi.");
                     }
                 },
 
